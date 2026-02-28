@@ -2,8 +2,8 @@
   <Folder Name="/Services/" />
   <Folder Name="/Services/Catalog/">
     <Project Path="Services/Catalog/Catalog.API/Catalog.API.csproj" />
-    <Project Path="Servvices/Catalog/Catalog.Aplication/Catalog.Aplication.csproj" />
-    <Project Path="Servvices/Catalog/Catalog.Core/Catalog.Core.csproj" />
-    <Project Path="Servvices/Catalog/Catalog.Infrastructure/Catalog.Infrastructure.csproj" />
+    <Project Path="Services/Catalog/Catalog.Aplication/Catalog.Aplication.csproj" />
+    <Project Path="Services/Catalog/Catalog.Core/Catalog.Core.csproj" />
+    <Project Path="Services/Catalog/Catalog.Infrastructure/Catalog.Infrastructure.csproj" />
   </Folder>
 </Solution>
