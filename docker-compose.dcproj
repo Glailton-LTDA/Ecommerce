@@ -7,11 +7,17 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include=".github\workflows\dotnet-tests.yml" />
-    <None Include="CODE_COVERAGE_SETUP.md" />
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
     <None Include="docker-compose.yml" />
     <None Include=".dockerignore" />
+    <None Include="docker-compose.yml.example" />
+    <None Include="DOCKER_QUICK_START.md" />
+    <None Include="DOCUMENTATION.md" />
+    <None Include="INDEX.md" />
+    <None Include="QUICK_REFERENCE.md" />
+    <None Include="Services\Catalog\CATALOG_SERVICE.md" />
+    <None Include="SETUP_CHECKLIST.md" />
   </ItemGroup>
 </Project>
