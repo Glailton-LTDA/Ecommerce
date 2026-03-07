@@ -1,0 +1,266 @@
+# Docker Compose Configuration for Ecommerce Platform
+
+This is the recommended `docker-compose.yml` file to run the Ecommerce platform with all services and dependencies.
+
+Place this file in the project root directory (`./docker-compose.yml`).
+
+```yaml
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: ecommerce-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: CatalogDb
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Catalog Service
+  catalog-service:
+    build:
+      context: .
+      dockerfile: Services/Catalog/Catalog.API/Dockerfile
+    container_name: ecommerce-catalog
+    ports:
+      - "5001:8080"
+    environment:
+      - DatabaseSettings__ConnectionString=mongodb://admin:password@mongodb:27017/CatalogDb?authSource=admin
+      - DatabaseSettings__DatabaseName=CatalogDb
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: curl -f http://localhost:8080/health || exit 1
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # Add your services here as you develop them
+  # order-service:
+  #   build:
+  #     context: .
+  #     dockerfile: Services/Order/Order.API/Dockerfile
+  #   container_name: ecommerce-order
+  #   ports:
+  #     - "5002:8080"
+  #   environment:
+  #     - DatabaseSettings__ConnectionString=mongodb://admin:password@mongodb:27017/OrderDb?authSource=admin
+  #     - DatabaseSettings__DatabaseName=OrderDb
+  #   depends_on:
+  #     - mongodb
+  #   networks:
+  #     - ecommerce-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  ecommerce-network:
+    driver: bridge
+```
+
+## Usage
+
+### Start All Services
+```bash
+docker-compose up -d
+```
+
+### View Logs
+```bash
+docker-compose logs -f
+```
+
+### View Specific Service Logs
+```bash
+docker-compose logs -f catalog-service
+docker-compose logs -f mongodb
+```
+
+### Stop All Services
+```bash
+docker-compose down
+```
+
+### Stop and Remove Volumes
+```bash
+docker-compose down -v
+```
+
+### Rebuild Images
+```bash
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+---
+
+## Service URLs
+
+After running `docker-compose up -d`:
+
+- **Catalog API:** `http://localhost:5001/api/v1/catalog`
+- **Catalog Swagger:** `http://localhost:5001/swagger`
+- **MongoDB:** `mongodb://admin:password@localhost:27017`
+
+---
+
+## MongoDB Connection
+
+### Inside Container
+```
+mongodb://admin:password@mongodb:27017/CatalogDb?authSource=admin
+```
+
+### From Host Machine
+```
+mongodb://admin:password@localhost:27017/CatalogDb?authSource=admin
+```
+
+### MongoDB Compass
+- Server: `mongodb://admin:password@localhost:27017`
+- Default Auth Database: `admin`
+
+---
+
+## Environment Variables
+
+Edit the `environment` section in each service to customize:
+
+| Variable | Description | Current Value |
+|----------|-------------|---|
+| `DatabaseSettings__ConnectionString` | MongoDB connection string | `mongodb://admin:password@mongodb:27017/CatalogDb?authSource=admin` |
+| `DatabaseSettings__DatabaseName` | Database name | `CatalogDb` |
+| `ASPNETCORE_ENVIRONMENT` | ASP.NET environment | `Development` |
+| `ASPNETCORE_URLS` | API URLs | `http://+:8080` |
+
+---
+
+## Performance Tuning
+
+### Resource Limits
+
+Add resource constraints to prevent services from consuming too much:
+
+```yaml
+services:
+  catalog-service:
+    # ... config
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+  
+  mongodb:
+    # ... config
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+```
+
+### MongoDB Data Persistence
+
+The `mongodb_data` volume persists MongoDB data. To reset:
+
+```bash
+docker-compose down -v
+```
+
+---
+
+## Troubleshooting
+
+### Check Service Status
+```bash
+docker-compose ps
+```
+
+### View Service Logs
+```bash
+docker-compose logs <service-name>
+```
+
+### Test Database Connection
+```bash
+docker-compose exec mongodb mongosh
+```
+
+### Rebuild Specific Service
+```bash
+docker-compose build --no-cache catalog-service
+docker-compose up -d catalog-service
+```
+
+### Clear Everything
+```bash
+docker-compose down -v
+docker system prune -a
+```
+
+---
+
+## Adding New Services
+
+When you create a new service (e.g., Order Service):
+
+1. **Create Dockerfile** in `Services/Order/Order.API/Dockerfile`
+2. **Add to docker-compose.yml:**
+
+```yaml
+order-service:
+  build:
+    context: .
+    dockerfile: Services/Order/Order.API/Dockerfile
+  container_name: ecommerce-order
+  ports:
+    - "5002:8080"
+  environment:
+    - DatabaseSettings__ConnectionString=mongodb://admin:password@mongodb:27017/OrderDb?authSource=admin
+    - DatabaseSettings__DatabaseName=OrderDb
+    - ASPNETCORE_ENVIRONMENT=Development
+  depends_on:
+    - mongodb
+  networks:
+    - ecommerce-network
+  healthcheck:
+    test: curl -f http://localhost:8080/health || exit 1
+    interval: 30s
+    timeout: 3s
+    retries: 3
+```
+
+3. **Restart services:**
+```bash
+docker-compose up -d --build
+```
+
+---
+
+**Last Updated:** January 2024
